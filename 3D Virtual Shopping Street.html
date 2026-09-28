@@ -1,0 +1,289 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>3D Virtual Shopping Street</title>
+<style>
+:root{--bg:#cfe9f7;--pn:rgba(255,255,255,.9);--tx:#12303f;--ac:#1fa3c8;--ye:#f5b83d;--rd:#e0483e;--bd:rgba(18,48,63,.15);--in:#fff}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0d1f28;--pn:rgba(16,36,46,.92);--tx:#e6f3f9;--bd:rgba(255,255,255,.18);--in:#0d1f28}}
+:root[data-theme=dark]{--bg:#0a0e13;--pn:rgba(15,21,28,.94);--tx:#eef2f5;--bd:rgba(255,255,255,.12);--in:#0a0e13;--ac:#19b37a}
+html,body{height:100%;margin:0}body{background:var(--bg);color:var(--tx);font:15px system-ui,sans-serif;overflow:hidden}
+#world{position:fixed;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
+button{font:inherit;cursor:pointer;border:1px solid var(--bd);background:var(--pn);color:var(--tx);border-radius:6px;padding:8px 14px}
+button.pri{background:var(--ac);color:#fff;border:0;font-weight:700}button.pri:hover{filter:brightness(1.08)}
+#bar{z-index:8;position:fixed;top:0;left:0;right:0;display:flex;gap:10px;align-items:center;padding:calc(env(safe-area-inset-top,0px) + 8px) 12px 8px;background:var(--pn);backdrop-filter:blur(10px);border-bottom:1px solid var(--bd)}
+#nav{display:flex;gap:6px;overflow-x:auto;flex:1}#nav button{white-space:nowrap;background:none;border:0;opacity:.8;font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:8px 10px}#nav button:hover{opacity:1;color:var(--ac)}
+#hint{position:fixed;left:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);background:var(--pn);padding:8px 12px;border-radius:10px;font-size:13px;max-width:60%}
+#pad{position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);display:grid;grid-template-columns:repeat(3,44px);gap:4px}
+#pad button{height:44px;padding:0}
+#cart{position:fixed;top:0;right:0;bottom:0;width:min(390px,100%);background:var(--pn);backdrop-filter:blur(12px);transform:translateX(100%);transition:.25s;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top,0px) + 12px) 14px calc(env(safe-area-inset-bottom,0px) + 14px);box-sizing:border-box;z-index:8}
+#cart.open{transform:none}#items{flex:1;overflow:auto}
+.it{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--bd)}.it .em{font-size:28px}.it .m{flex:1;font-size:13px}
+.q{display:inline-flex;gap:6px;align-items:center}.q button{padding:2px 9px}
+.dot{display:inline-block;width:12px;height:12px;border-radius:50%;border:1px solid var(--bd);vertical-align:middle}
+#dlg{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;z-index:9}#dlg[hidden]{display:none}
+.card{background:var(--pn);backdrop-filter:blur(14px);border-radius:18px;max-width:980px;width:100%;max-height:94%;overflow:auto;position:relative;padding:14px;box-sizing:border-box;border:1px solid var(--bd)}
+.x{position:absolute;right:10px;top:10px;z-index:2}
+.prod{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}@media(max-width:760px){.prod{grid-template-columns:1fr}}
+#vw{height:420px;border-radius:14px;background:radial-gradient(circle at 50% 30%,#2a3540,#0b0f14);position:relative;cursor:grab;touch-action:none;overflow:hidden}@media(max-width:760px){#vw{height:300px}}
+#vw canvas{display:block;width:100%;height:100%}.vb{position:absolute;left:10px;bottom:10px;display:flex;gap:6px}
+.inf h2{margin:4px 0}.pr{font-size:26px;font-weight:800;color:var(--ac)}
+.chip{margin:3px 4px 3px 0}.chip.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.lbl{font-weight:700;margin-top:12px;font-size:13px;opacity:.8}
+input{width:100%;box-sizing:border-box;padding:9px;margin:4px 0;border-radius:8px;border:1px solid var(--bd);background:var(--in);color:var(--tx);font:inherit}
+.row{display:flex;justify-content:space-between;padding:3px 0}
+#toast{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:var(--ac);color:#fff;padding:9px 16px;border-radius:20px;opacity:0;transition:.3s;pointer-events:none;z-index:20}#toast.on{opacity:1}
+#aiBtn{position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 118px);border-radius:24px;padding:10px 16px;box-shadow:0 0 18px rgba(25,179,122,.6);z-index:6}
+#chat{position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 168px);width:min(360px,calc(100% - 24px));height:min(55%,440px);display:flex;flex-direction:column;background:var(--pn);backdrop-filter:blur(14px);border:1px solid var(--bd);border-radius:16px;z-index:6}#chat[hidden]{display:none}
+#msgs{flex:1;overflow:auto;padding:0 12px}.msg{padding:8px 11px;margin:6px 0;border-radius:12px;max-width:90%;font-size:14px}.msg.bot{background:rgba(25,179,122,.2)}.msg.me{background:var(--ac);color:#fff;margin-left:auto}
+.res{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);font-size:13px}.res button{font-size:11px;padding:4px 7px;margin:2px}
+#sug{padding:0 8px;display:flex;gap:4px;flex-wrap:wrap}#sug button{font-size:12px;padding:3px 8px}.ib{display:flex;gap:6px;padding:8px}.ib input{margin:0}
+#pay{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 70px);padding:12px 20px;border-radius:24px;z-index:6;box-shadow:0 0 22px rgba(25,179,122,.7)}#pay[hidden]{display:none}
+#bar input{width:190px;margin:0}@media(max-width:820px){#sq,#nav{display:none}#bar{justify-content:space-between}}
+.logo{font-weight:800;letter-spacing:.18em;font-size:17px}.logo span{color:var(--ac)}
+#hero{position:fixed;inset:0;z-index:10;display:flex;align-items:center;padding:0 6vw;background:linear-gradient(90deg,rgba(6,10,15,.94) 30%,rgba(6,10,15,.3))}#hero[hidden]{display:none}
+#hero h1{font-size:clamp(32px,5vw,60px);line-height:1.05;margin:8px 0 14px;max-width:640px}#hero p{max-width:480px;opacity:.8;line-height:1.55}
+.eb{letter-spacing:.2em;font-size:12px;color:var(--ac);font-weight:700}.hb{display:flex;gap:10px;margin:22px 0;flex-wrap:wrap}.hb button{padding:13px 24px}.tr{display:flex;gap:22px;font-size:13px;opacity:.75;flex-wrap:wrap}
+#catp{position:fixed;inset:0;z-index:7;background:var(--bg);overflow:auto;padding:calc(env(safe-area-inset-top,0px) + 70px) 5vw 30px}#catp[hidden]{display:none}
+.tb{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0}.tb select{padding:8px;border-radius:6px;background:var(--in);color:var(--tx);border:1px solid var(--bd)}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px}.pc{background:var(--pn);border:1px solid var(--bd);border-radius:12px;padding:12px}
+.pc .im{aspect-ratio:1;border-radius:8px;background:radial-gradient(circle at 50% 35%,#2a3540,#10161d);display:flex}.pc img{width:100%;object-fit:contain}
+.pc h4{margin:2px 0 4px}.pc small{opacity:.6;text-transform:uppercase;letter-spacing:.08em;font-size:11px}.rt{color:var(--ye);font-size:13px}.pp{font-weight:800;font-size:18px;margin:4px 0 10px}.cb{display:flex;gap:6px}.cb button{flex:1;padding:8px 4px;font-size:13px}
+.th{width:56px;height:56px;border-radius:8px;object-fit:cover;background:#1a232d}
+</style></head><body>
+<canvas id="world"></canvas>
+<header id="bar"><div class="logo">LUXE<span>3D</span></div><nav id="nav"></nav><input id="sq" placeholder="Search products…"><button id="catBtn">Catalog</button><button id="cartBtn">Cart <b id="cnt">0</b></button></header>
+<div id="hint">W/S walk · A/D turn · drag to look · click a product · pay at a billing counter</div>
+<div id="pad"><span></span><button data-k="w">▲</button><span></span><button data-k="a">◀</button><button data-k="s">▼</button><button data-k="d">▶</button></div>
+<aside id="cart"></aside><div id="dlg" hidden><div class="card" id="card"></div></div><div id="toast"></div>
+<section id="catp" hidden><h2 style="margin:0">All Products</h2><div class="tb"><input id="cq" placeholder="Search…" style="max-width:240px;margin:0"><span id="chips"></span><select id="cs"><option value="pop">Featured</option><option value="lo">Price: Low to High</option><option value="hi">Price: High to Low</option><option value="rt">Top Rated</option></select><button id="cclose">Back to 3D Store</button></div><div id="grid"></div></section>
+<div id="hero"><div><div class="eb">VIRTUAL FLAGSHIP STORE</div><h1>Shop the collection in immersive 3D</h1><p>Walk through our showroom, inspect every product from all angles, and pay at the counter, or browse the full catalog.</p><div class="hb"><button class="pri" id="enter">Enter 3D Store</button><button id="heroCat">Browse Catalog</button></div><div class="tr"><span>✓ Free delivery over ₹999</span><span>✓ 7-day returns</span><span>✓ Secure checkout</span></div></div></div>
+<button id="aiBtn" class="priAI Assistant</button>
+<section id="chat" hidden><div class="row" style="padding:10px 12px"><b>Shopping Assistant</b><button id="cx">✕</button></div><div id="msgs"></div><div id="sug"></div><div class="ib"><input id="qi" placeholder="e.g. black shoes under 3000"><button class="pri" id="qs">Send</button></div></section>
+<button id="pay" class="pri" hidden></button>
+<div id="err" style="position:fixed;left:8px;right:8px;top:70px;z-index:99;background:#7a1f1f;color:#fff;padding:8px 12px;border-radius:8px;font-size:13px" hidden></div>
+<script>addEventListener('error',e=>{const d=document.getElementById('err');d.hidden=false;d.textContent='Error: '+e.message})</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=s=>document.querySelector(s),money=n=>'₹'+n.toLocaleString('en-IN'),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const CATS=[{k:'Shoes',e:'👟',c:0x2f6f5e},{k:'Clothing',e:'👕',c:0x8a6d3b},{k:'Bags',e:'👜',c:0x7a3b3b},{k:'Watches',e:'⌚',c:0x2b3a55},{k:'Accessories',e:'🕶️',c:0x5b4a72},{k:'Electronics',e:'🎧',c:0x2f4f6f}];
+const COL={Black:'#1b1b1f',White:'#f4f4f4',Blue:'#2f6fe0',Red:'#d63b3b',Green:'#2e8b57',Grey:'#8a8f98',Yellow:'#f5b83d',Silver:'#c9ced6',Brown:'#7a4a2b'};
+// MVP data. Later this array is replaced by GET /api/products (MongoDB).
+const P=[
+{id:'p1',name:'Nike Running Shoe',cat:'Shoes',type:'shoe',price:2999,colors:['Black','White','Blue'],sizes:['7','8','9','10'],stock:12,rating:4.6,desc:'Lightweight running shoe with cushioned sole and breathable upper.'},
+{id:'p2',name:'Urban Canvas Sneaker',cat:'Shoes',type:'shoe',price:1799,colors:['Red','White','Black'],sizes:['7','8','9','10'],stock:8,rating:4.2,desc:'Everyday casual sneaker with a soft canvas finish.'},
+{id:'p3',name:'Classic Cotton Tee',cat:'Clothing',type:'shirt',price:799,colors:['Yellow','White','Green'],sizes:['S','M','L','XL'],stock:30,rating:4.4,desc:'100% cotton crew-neck t-shirt, soft and durable.'},
+{id:'p4',name:'Comfort Hoodie',cat:'Clothing',type:'shirt',price:1999,colors:['Grey','Black','Blue'],sizes:['M','L','XL'],stock:14,rating:4.7,desc:'Warm fleece hoodie for cool evenings.'},
+{id:'p5',name:'City Backpack',cat:'Bags',type:'bag',price:2499,colors:['Red','Black','Blue'],sizes:['One size'],stock:9,rating:4.5,desc:'Spacious backpack with laptop compartment.'},
+{id:'p6',name:'Everyday Tote',cat:'Bags',type:'bag',price:1299,colors:['Brown','Black','Green'],sizes:['One size'],stock:20,rating:4.1,desc:'Roomy tote for shopping and daily carry.'},
+{id:'p7',name:'Chrono Steel Watch',cat:'Watches',type:'watch',price:4999,colors:['Silver','Black','Brown'],sizes:['40mm','44mm'],stock:6,rating:4.8,desc:'Stainless steel chronograph with water resistance.'},
+{id:'p8',name:'Fit Smart Watch',cat:'Watches',type:'watch',price:5999,colors:['Black','Blue','Green'],sizes:['40mm','44mm'],stock:10,rating:4.3,desc:'Smart watch with heart-rate and sleep tracking.'},
+{id:'p9',name:'Aviator Sunglasses',cat:'Accessories',type:'glasses',price:999,colors:['Black','Brown','Blue'],sizes:['Free'],stock:25,rating:4.0,desc:'UV-protected lenses in a lightweight frame.'},
+{id:'p10',name:'Sport Cap',cat:'Accessories',type:'cap',price:499,colors:['Blue','Red','Black'],sizes:['Free'],stock:40,rating:4.2,desc:'Adjustable cotton cap with curved brim.'},
+{id:'p11',name:'Studio Headphones',cat:'Electronics',type:'phones',price:3499,colors:['Black','White','Red'],sizes:['Standard'],stock:11,rating:4.6,desc:'Over-ear headphones with deep bass and 30h battery.'},
+{id:'p12',name:'Pocket Speaker',cat:'Electronics',type:'speaker',price:2799,colors:['Blue','Black','Yellow'],sizes:['Standard'],stock:15,rating:4.4,desc:'Portable Bluetooth speaker with powerful sound.'}];
+// ---------- procedural product models (swap for GLB via GLTFLoader in the next phase) ----------
+function mk(type,hex){
+ const g=new THREE.Group(),L=c=>new THREE.Color(c).convertSRGBToLinear(),main=new THREE.MeshPhysicalMaterial({color:L(hex),roughness:type=='watch'?.25:(type=='shoe'||type=='shirt')?.85:.4,metalness:type=='watch'?.9:0,clearcoat:['bag','phones','speaker'].includes(type)?.6:0,clearcoatRoughness:.3}),dk=new THREE.MeshStandardMaterial({color:L(0x22262b),roughness:.45,metalness:.2}),wh=new THREE.MeshStandardMaterial({color:L(0xf2f2f2),roughness:.7});
+ const a=(geo,m,x,y,z,rx,ry,rz,sc)=>{const o=new THREE.Mesh(geo,m);o.position.set(x||0,y||0,z||0);o.rotation.set(rx||0,ry||0,rz||0);if(sc)o.scale.set(...sc);o.castShadow=true;g.add(o);return o};
+ const B=(w,h,d)=>new THREE.BoxGeometry(w,h,d),C=(r,h)=>new THREE.CylinderGeometry(r,r,h,32),T=(r,t,arc)=>new THREE.TorusGeometry(r,t,12,40,arc||Math.PI*2),S=()=>new THREE.SphereGeometry(1,28,16);
+ if(type=='shoe'){a(B(1.5,.15,.6),wh,0,-.25,0);a(S(),main,-.1,-.05,0,0,0,0,[.7,.3,.3]);a(S(),main,.55,-.12,0,0,0,0,[.35,.2,.28]);a(B(.4,.05,.3),wh,.15,.22,0)}
+ if(type=='shirt'){a(B(1,1.1,.3),main,0,0,0);a(B(.45,.35,.3),main,-.68,.38,0,0,0,.7);a(B(.45,.35,.3),main,.68,.38,0,0,0,-.7);a(T(.18,.04),dk,0,.55,0,Math.PI/2)}
+ if(type=='bag'){a(B(1,.85,.45),main,0,0,0);a(B(1.02,.3,.47),dk,0,.28,0);a(T(.32,.04,Math.PI),dk,0,.42,0);a(B(.5,.3,.05),dk,0,-.1,.25)}
+ if(type=='watch'){a(B(.3,1.6,.05),main,0,0,-.05);a(T(.4,.06),wh,0,0,0);a(C(.36),dk,0,0,0,Math.PI/2);a(B(.02,.28,.02),wh,0,.1,.06)}
+ if(type=='glasses'){[-1,1].forEach(s=>{a(T(.32,.05),main,s*.4,0,0);a(new THREE.CircleGeometry(.3,24),new THREE.MeshStandardMaterial({color:0x111111,transparent:true,opacity:.6,side:2}),s*.4,0,0);a(B(.03,.03,.7),main,s*.72,0,-.35)});a(B(.2,.05,.05),main,0,.08,0)}
+ if(type=='phones'){a(T(.5,.06,Math.PI),main,0,.05,0);[-1,1].forEach(s=>{a(C(.22),main,s*.5,.05,0,0,0,Math.PI/2);a(C(.16),dk,s*.6,.05,0,0,0,Math.PI/2)})}
+ if(type=='cap'){a(new THREE.SphereGeometry(.5,28,14,0,Math.PI*2,0,Math.PI/2),main,0,-.15,0);a(B(.7,.03,.5),dk,0,-.15,.5);a(C(.5,.03),dk,0,-.15,0)}
+ if(type=='speaker'){a(C(.4,.9),main,0,0,0,0,0,Math.PI/2);[-1,1].forEach(s=>{a(C(.3,.02),dk,0,s*.2,.4,Math.PI/2)});a(C(.4,.04),dk,.46,0,0,0,0,Math.PI/2)}
+ g.userData.main=main;return g}
+function tex(t,w,h,bg,fg,fs){const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.fillStyle=bg;x.fillRect(0,0,w,h);x.fillStyle=fg;x.font='bold '+fs+'px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText(t,w/2,h/2);const T=new THREE.CanvasTexture(c);T.encoding=THREE.sRGBEncoding;T.anisotropy=8;return T}
+// ---------- store scene (realistic: PBR, textures, tone mapping, soft shadows, reflections) ----------
+function noise(x,w,h,n,a){for(let i=0;i<n;i++){x.fillStyle=(Math.random()<.5?'rgba(0,0,0,':'rgba(255,255,255,')+a+')';x.fillRect(Math.random()*w,Math.random()*h,2,2)}}
+function ct(w,h,draw,rep,rx){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rep,rx||rep);t.encoding=THREE.sRGBEncoding;t.anisotropy=8;return t}
+function makeEnv(r,n){const s=new THREE.Scene(),c=document.createElement('canvas');c.width=4;c.height=256;const x=c.getContext('2d'),g=x.createLinearGradient(0,0,0,256);const cs=n==2?['#3a3226','#8a7a60','#2a2620','#15130f']:n?['#0c1630','#2b3b5e','#1a1d24','#0d0f13']:['#5aa9e6','#d8ecf7','#8a8f88','#4b4f4a'];g.addColorStop(0,cs[0]);g.addColorStop(.5,cs[1]);g.addColorStop(.52,cs[2]);g.addColorStop(1,cs[3]);x.fillStyle=g;x.fillRect(0,0,4,256);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;s.add(new THREE.Mesh(new THREE.SphereGeometry(50,32,16),new THREE.MeshBasicMaterial({map:t,side:THREE.BackSide})));const l=new THREE.Mesh(new THREE.BoxGeometry(24,1,24),new THREE.MeshBasicMaterial({color:new THREE.Color().setScalar(5)}));l.position.y=30;s.add(l);const p=new THREE.PMREMGenerator(r),e=p.fromScene(s).texture;p.dispose();return e}
+const M=o=>{if(o.color!==undefined)o.color=new THREE.Color(o.color).convertSRGBToLinear();return new THREE.MeshStandardMaterial(o)};
+const cv=$('#world'),R=new THREE.WebGLRenderer({canvas:cv,antialias:true});R.setPixelRatio(Math.min(devicePixelRatio,2));R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;R.outputEncoding=THREE.sRGBEncoding;R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=1.05;
+const sc=new THREE.Scene(),sk=ct(4,256,(x,w,h)=>{const g=x.createLinearGradient(0,0,0,h);g.addColorStop(0,'#050a18');g.addColorStop(1,'#1c2b4a');x.fillStyle=g;x.fillRect(0,0,w,h)},1);sk.wrapS=sk.wrapT=THREE.ClampToEdgeWrapping;
+sc.background=new THREE.Color(0x101216);sc.environment=makeEnv(R,2);sc.fog=new THREE.Fog(0x14161c,40,110);
+const cam=new THREE.PerspectiveCamera(65,1,.1,200);cam.rotation.order='YXZ';
+sc.add(new THREE.HemisphereLight(0xfff0dc,0x3a3226,.8));
+const sun=new THREE.DirectionalLight(0xfff1dc,.9);sun.position.set(6,32,8);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.bias=-.0004;sun.shadow.normalBias=.03;sun.shadow.radius=3;Object.assign(sun.shadow.camera,{left:-32,right:32,top:52,bottom:-52,far:100});sun.shadow.camera.updateProjectionMatrix();sc.add(sun);
+const TX={
+ grass:ct(256,256,(x,w,h)=>{x.fillStyle='#5f9a4a';x.fillRect(0,0,w,h);noise(x,w,h,7000,.14)},60),
+ road:ct(256,256,(x,w,h)=>{x.fillStyle='#3a3e43';x.fillRect(0,0,w,h);noise(x,w,h,9000,.2)},3,30),
+ tile:ct(128,128,(x,w,h)=>{x.fillStyle='#cfc8bb';x.fillRect(0,0,w,h);noise(x,w,h,900,.08);x.strokeStyle='#8f8a80';x.lineWidth=3;x.strokeRect(0,0,w,h)},1.5,40),
+ floor:ct(128,128,(x,w,h)=>{x.fillStyle='#e8dcc6';x.fillRect(0,0,w,h);x.fillStyle='#d3c3a6';x.fillRect(0,0,64,64);x.fillRect(64,64,64,64);noise(x,w,h,900,.06)},4),
+ wood:ct(256,256,(x,w,h)=>{x.fillStyle='#8a5a3b';x.fillRect(0,0,w,h);for(let i=0;i<90;i++){x.fillStyle=i%2?'rgba(40,20,10,.14)':'rgba(220,160,100,.12)';x.fillRect(Math.random()*w,0,1+Math.random()*3,h)}},1),
+ wall:ct(128,128,(x,w,h)=>{x.fillStyle='#f4eee2';x.fillRect(0,0,w,h);noise(x,w,h,1500,.05)},2),
+ win:ct(64,128,(x,w,h)=>{x.fillStyle='#5d6f80';x.fillRect(0,0,w,h);for(let i=0;i<4;i++)for(let j=0;j<8;j++){x.fillStyle=Math.random()<.3?'#f6e3a1':'#9cc3dd';x.fillRect(6+i*15,6+j*15,9,10)}},1)};
+const mesh=(geo,m,x,y,z,sh)=>{const o=new THREE.Mesh(geo,m.isMaterial?m:M({color:m,roughness:.8}));o.position.set(x,y,z);o.receiveShadow=true;o.castShadow=!!sh;sc.add(o);return o};
+const spin=[],pick=[],ZS=[-4,-18,-32],SH=[],CTR=[];
+TX.marble=ct(256,256,(x,w,h)=>{x.fillStyle='#ebe8e2';x.fillRect(0,0,w,h);noise(x,w,h,2500,.04);x.lineWidth=1;for(let i=0;i<14;i++){x.strokeStyle=`rgba(90,95,105,${.1+Math.random()*.2})`;x.beginPath();let a=Math.random()*w,b=Math.random()*h;x.moveTo(a,b);for(let j=0;j<6;j++){a+=Math.random()*60-20;b+=Math.random()*60-20;x.lineTo(a,b)}x.stroke()}x.strokeStyle='rgba(60,60,60,.25)';x.lineWidth=2;x.strokeRect(0,0,w,h);x.beginPath();x.moveTo(w/2,0);x.lineTo(w/2,h);x.moveTo(0,h/2);x.lineTo(w,h/2);x.stroke()},4,24);
+const stone=M({color:0x1b1d22,roughness:.7}),panel=M({map:TX.wall,color:0xcfc6b6,roughness:.85}),glow=(c,i)=>M({color:0xffffff,emissive:c,emissiveIntensity:i});
+// mall shell: polished marble concourse, ceiling with light bars, walls
+mesh(new THREE.BoxGeometry(30,.05,70),stone,0,.02,-15);
+mesh(new THREE.BoxGeometry(11,.1,70),M({map:TX.marble,roughness:.1,metalness:.05,envMapIntensity:1.8}),0,.05,-15);
+[-4.6,0,4.6].forEach(x=>mesh(new THREE.BoxGeometry(.1,.02,70),M({color:0xd6b25e,emissive:0xd6b25e,emissiveIntensity:.5,metalness:.9,roughness:.3}),x,.105,-15));
+mesh(new THREE.BoxGeometry(30,.3,70),M({color:0x24272d,roughness:.8}),0,8.15,-15);
+for(let z=16;z>-49;z-=6)mesh(new THREE.BoxGeometry(8,.05,.6),glow(0xfff2d8,2.2),0,7.98,z);
+[-1,1].forEach(s=>{mesh(new THREE.BoxGeometry(.25,.08,70),glow(0xffd9a0,1.6),s*5.2,7.9,-15);mesh(new THREE.BoxGeometry(.4,8,70),panel,s*13.2,4,-15)});
+mesh(new THREE.BoxGeometry(30,8,.4),panel,0,4,20);mesh(new THREE.BoxGeometry(30,8,.4),panel,0,4,-50);
+const fsg=new THREE.Mesh(new THREE.PlaneGeometry(9,1.6),new THREE.MeshBasicMaterial({map:tex('LUXE3D MALL',900,160,'#0b0f14','#e8c98a',84)}));fsg.position.set(0,5,-49.75);sc.add(fsg);
+[[-43,14],[-25,6],[-11,6],[10,20]].forEach(w=>[-1,1].forEach(s=>mesh(new THREE.BoxGeometry(.3,8,w[1]),panel,s*5.65,4,w[0],1)));
+[[-11,'NEW SEASON'],[-25,'PREMIUM']].forEach(a=>[-1,1].forEach(s=>{const o=new THREE.Mesh(new THREE.PlaneGeometry(3,4),new THREE.MeshBasicMaterial({map:tex(a[1],420,560,'#10161d','#e8c98a',52)}));o.position.set(s*5.48,3.2,a[0]);o.rotation.y=-s*Math.PI/2;sc.add(o)}));
+{const wd=M({map:TX.wood,roughness:.6}),pm=M({color:0x3f8f4a,roughness:.9});[-1,1].forEach(s=>{[-11,-25].forEach(z=>{mesh(new THREE.BoxGeometry(.6,.08,1.8),wd,s*5.1,.5,z,1);mesh(new THREE.BoxGeometry(.08,.5,1.8),wd,s*5.4,.8,z,1)});[8,-43].forEach(z=>{mesh(new THREE.BoxGeometry(.9,.6,.9),stone,s*4.6,.3,z,1);mesh(new THREE.IcosahedronGeometry(.7,1),pm,s*4.6,1.2,z,1)})})}
+[-8,-34].forEach(z=>{const l=new THREE.PointLight(0xffe6c0,.9,30);l.position.set(0,6,z);sc.add(l)});
+
+
+
+function shop(ci,x,z,rot){
+ const C=CATS[ci],g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rot;sc.add(g);
+ const pl=M({map:TX.wall,roughness:.9}),alu=M({color:0x9aa3ab,metalness:.8,roughness:.3}),ac=M({color:C.c,roughness:.5,emissive:C.c,emissiveIntensity:.7});
+ const bx=(w,h,d,c,px,py,pz,sh)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),c.isMaterial?c:M({color:c,roughness:.7}));m.position.set(px,py,pz);m.castShadow=sh!==0;m.receiveShadow=true;g.add(m);return m};
+ bx(8,3.5,.2,pl,0,1.75,-3.5);bx(.2,3.5,7,pl,-4,1.75,0);bx(.2,3.5,7,pl,4,1.75,0);
+ bx(8.6,.25,7.8,ac,0,3.75,0);bx(8,.12,7,M({map:TX.floor,roughness:.3,metalness:.1}),0,.06,0);bx(8,.1,7,0xffffff,0,3.55,0);
+ bx(8,.6,.2,pl,0,3.2,3.4);bx(8.6,.15,1.5,ac,0,3.1,4.1).rotation.x=.4;bx(6.4,1.1,.15,ac,0,4.5,3.7);
+ const gl=M({color:0xbfe3f2,transparent:true,opacity:.2,roughness:.05,metalness:.3});gl.depthWrite=false;
+ [-1,1].forEach(s=>{bx(2.4,2.5,.04,gl,s*2.7,1.45,3.4,0);bx(.08,2.6,.1,alu,s*1.5,1.4,3.4);bx(.08,2.6,.1,alu,s*3.9,1.4,3.4);bx(2,.04,1.2,M({color:0xffffff,emissive:0xffffff,emissiveIntensity:1.5}),s*2,3.47,0,0)});
+ const sg=new THREE.Mesh(new THREE.PlaneGeometry(6,.9),new THREE.MeshBasicMaterial({map:tex(C.k.toUpperCase(),600,90,'#'+C.c.toString(16).padStart(6,'0'),'#fff',58)}));sg.position.set(0,4.5,3.78);g.add(sg);
+ const L=new THREE.PointLight(0xfff1d6,1.7,14);L.position.set(0,3,0);g.add(L);
+ bx(2.4,1,.7,M({color:0x1c2330,roughness:.4,metalness:.3}),0,.5,-2.3);bx(2.4,.06,.8,M({color:C.c,emissive:C.c,emissiveIntensity:.9}),0,1.02,-2.3,0);
+ const cl=new THREE.Mesh(new THREE.PlaneGeometry(1.6,.4),new THREE.MeshBasicMaterial({map:tex('BILLING',400,100,'#0b1220','#fff',48)}));cl.position.set(0,1.5,-2);g.add(cl);g.updateMatrixWorld(true);CTR.push(g.localToWorld(new THREE.Vector3(0,0,-1.4)));
+ const cols=[C.c,0xffffff,0x22262b,0xf5b83d];
+ [1,1.8,2.6].forEach(y=>{bx(7,.06,.45,M({map:TX.wood,roughness:.6}),0,y,-3.25,0);for(let i=0;i<9;i++){const h=.25+Math.random()*.25;bx(.4+Math.random()*.3,h,.32,M({color:cols[i%4],roughness:.6}),-3.2+i*.8,y+.03+h/2,-3.25,0)}});
+ P.filter(p=>p.cat==C.k).forEach((p,i)=>{const px=i?1.9:-1.9;
+  const pb=new THREE.Mesh(new THREE.CylinderGeometry(.9,.95,.8,40),M({color:0xf4f4f4,roughness:.35}));pb.position.set(px,.4,-.3);pb.castShadow=pb.receiveShadow=true;g.add(pb);
+  const pt=new THREE.Mesh(new THREE.CylinderGeometry(1,1,.06,40),M({map:TX.wood,roughness:.5}));pt.position.set(px,.83,-.3);pt.receiveShadow=true;g.add(pt);
+  const m=mk(p.type,COL[p.colors[0]]);m.position.set(px,1.6,-.3);m.userData.pid=p.id;g.add(m);spin.push(m);pick.push(m);
+  const lb=new THREE.Mesh(new THREE.PlaneGeometry(2.2,.5),new THREE.MeshBasicMaterial({map:tex(p.name+' · '+money(p.price),700,150,'#12303f','#fff',46)}));lb.position.set(px,2.8,.5);g.add(lb)});
+}
+CATS.forEach((c,i)=>{const left=i<3,z=ZS[i%3];shop(i,left?-9:9,z,left?Math.PI/2:-Math.PI/2);SH.push({z,yaw:left?Math.PI/2:-Math.PI/2})});
+// ---------- YOU (avatar) + AI robot guide ----------
+let ph=0,mv=0,pX=0,pZ=12,BAG=false,PAYCB=null,tb=0;
+const skin=new THREE.MeshPhysicalMaterial({color:new THREE.Color(0xc68e6b).convertSRGBToLinear(),roughness:.55}),
+ jkt=M({color:0x1e2530,roughness:.85}),tee=M({color:0xf1f1f1,roughness:.9}),jeans=M({color:0x2b4066,roughness:.9}),shoeM=M({color:0xf4f4f4,roughness:.5}),sole=M({color:0xd0d0d0,roughness:.8}),hair=M({color:0x1a1210,roughness:.7}),eyeW=M({color:0xffffff,roughness:.2}),iris=M({color:0x2a1a10,roughness:.2});
+const AV=new THREE.Group(),SPH=new THREE.SphereGeometry(1,24,16),CYL=(a,b,h)=>new THREE.CylinderGeometry(a,b,h,20);
+const pv=(par,x,y)=>{const g=new THREE.Group();g.position.set(x,y,0);par.add(g);return g};
+const pt=(geo,m,x,y,z,par,s)=>{const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);if(s)o.scale.set(s[0],s[1],s[2]);o.castShadow=true;par.add(o);return o};
+const mkLeg=x=>{const h=pv(AV,x,.93),k=pv(h,0,-.42);pt(CYL(.085,.065,.44),jeans,0,-.21,0,h);pt(CYL(.062,.05,.44),jeans,0,-.22,0,k);pt(SPH,shoeM,0,-.47,-.05,k,[.055,.045,.13]);pt(SPH,sole,0,-.51,-.05,k,[.058,.014,.135]);return{h,k}};
+const mkArm=x=>{const s=pv(AV,x,1.44),e=pv(s,0,-.3);pt(CYL(.05,.042,.3),jkt,0,-.15,0,s);pt(CYL(.042,.034,.27),jkt,0,-.135,0,e);pt(SPH,skin,0,-.31,0,e,[.03,.045,.024]);return{s,e}};
+const LL=mkLeg(-.09),LR=mkLeg(.09),AL=mkArm(-.235),AR=mkArm(.235);
+pt(SPH,jeans,0,.97,0,AV,[.17,.09,.11]);pt(CYL(.19,.16,.55),jkt,0,1.2,0,AV,[1,1,.6]);pt(SPH,jkt,0,1.45,0,AV,[.21,.075,.105]);pt(CYL(.07,.09,.08),tee,0,1.5,-.01,AV);
+pt(CYL(.045,.05,.1),skin,0,1.57,0,AV);pt(SPH,skin,0,1.7,0,AV,[.088,.108,.1]);pt(SPH,skin,0,1.62,-.015,AV,[.072,.07,.08]);
+[-1,1].forEach(s=>{pt(SPH,eyeW,s*.035,1.7,-.088,AV,[.014,.011,.008]);pt(SPH,iris,s*.035,1.7,-.096,AV,[.008,.008,.004]);pt(new THREE.BoxGeometry(.04,.006,.006),hair,s*.035,1.722,-.092,AV);pt(SPH,skin,s*.09,1.7,0,AV,[.012,.028,.018])});
+pt(SPH,skin,0,1.675,-.105,AV,[.014,.02,.02]);
+pt(new THREE.SphereGeometry(1,24,16,0,Math.PI*2,0,Math.PI*.42),hair,0,1.705,.008,AV,[.093,.113,.106]);pt(SPH,hair,0,1.68,.03,AV,[.09,.07,.08]);
+const bag=pv(AR.e,0,-.34);pt(new THREE.BoxGeometry(.2,.26,.1),M({color:0xb08a5a,roughness:.8}),0,-.13,0,bag);pt(new THREE.TorusGeometry(.05,.008,8,16),M({color:0x8a6a40}),0,.02,0,bag);
+const yt=new THREE.Sprite(new THREE.SpriteMaterial({map:tex('You',160,64,'#19b37a','#fff',40),depthTest:false}));yt.scale.set(.5,.2,1);yt.position.y=2.05;AV.add(yt);sc.add(AV);
+const RB=new THREE.Group();{const wm=M({color:0xf2f5f7,roughness:.3,metalness:.3}),ey=new THREE.MeshBasicMaterial({color:0x3ee6a0}),sp=(r,m,x,y,z)=>{const o=new THREE.Mesh(new THREE.SphereGeometry(r,20,14),m);o.position.set(x,y,z);RB.add(o);return o};
+ sp(.22,wm,0,0,0).scale.y=1.1;sp(.17,wm,0,.32,0);[-1,1].forEach(s=>sp(.035,ey,s*.07,.34,-.15));sp(.04,ey,0,.64,0);const an=new THREE.Mesh(new THREE.CylinderGeometry(.01,.01,.15),wm);an.position.y=.55;RB.add(an);}
+sc.add(RB);
+function avatarStep(dt){dt=dt||.016;const sp=Math.hypot(X-pX,Z-pZ)/dt;pX=X;pZ=Z;mv+=((sp||0)-mv)*.2;ph+=mv*dt*2.4;const k=Math.min(1,mv/2.5)*.7;
+ const sn=Math.sin(ph),cs=Math.cos(ph);LL.h.rotation.x=sn*k;LR.h.rotation.x=-sn*k;LL.k.rotation.x=-Math.max(0,cs)*k*1.3;LR.k.rotation.x=-Math.max(0,-cs)*k*1.3;AL.s.rotation.x=-sn*k*.9;AR.s.rotation.x=sn*k*.9;AL.e.rotation.x=.25+Math.max(0,sn)*k*.5;AR.e.rotation.x=.25+Math.max(0,-sn)*k*.5;
+ AV.position.set(X,Math.abs(Math.sin(ph))*.02*Math.min(1,mv/2.5),Z);AV.rotation.y=yaw;bag.visible=BAG;
+ cam.position.set(X+Math.sin(yaw)*4.2,2.9,Z+Math.cos(yaw)*4.2);cam.lookAt(X,1.5,Z);
+ tb+=dt;RB.position.set(X+Math.cos(yaw)*1.1-Math.sin(yaw)*.3,1.8+Math.sin(tb*2)*.08,Z-Math.sin(yaw)*1.1-Math.cos(yaw)*.3);RB.rotation.y=yaw}
+// navigation
+const k={};let X=0,Z=12,yaw=0,tgt=null;
+addEventListener('keydown',e=>{if(e.target.tagName!='INPUT')k[e.key.toLowerCase()]=1});addEventListener('keyup',e=>k[e.key.toLowerCase()]=0);
+document.querySelectorAll('#pad button').forEach(b=>{b.onpointerdown=()=>k[b.dataset.k]=1;b.onpointerup=b.onpointerleave=()=>k[b.dataset.k]=0});
+CATS.forEach((c,i)=>{const b=document.createElement('button');b.textContent=c.k;b.onclick=()=>goShop(i);$('#nav').appendChild(b)});
+let dn=null;const rc=new THREE.Raycaster();
+cv.onpointerdown=e=>{dn={x:e.clientX,y:e.clientY,m:0};cv.setPointerCapture(e.pointerId)};
+cv.onpointermove=e=>{if(!dn)return;yaw+=(e.clientX-dn.x)*.005;dn.m+=Math.abs(e.clientX-dn.x)+Math.abs(e.clientY-dn.y);dn.x=e.clientX;dn.y=e.clientY;tgt=null};
+cv.onpointerup=e=>{if(dn&&dn.m<6){rc.setFromCamera({x:e.clientX/innerWidth*2-1,y:-(e.clientY/innerHeight)*2+1},cam);if(rc.intersectObjects([RB],true).length){chat.hidden=false;dn=null;return}const h=rc.intersectObjects(pick,true)[0];if(h){let o=h.object;while(o&&!o.userData.pid)o=o.parent;if(o)openProduct(P.find(p=>p.id==o.userData.pid))}}dn=null};
+function size(){R.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}addEventListener('resize',size);size();
+let last=performance.now();
+(function loop(t){requestAnimationFrame(loop);const dt=Math.min(.05,(t-last)/1e3);last=t;
+ const f=(k.w||k.arrowup?1:0)-(k.s||k.arrowdown?1:0),tn=(k.a||k.arrowleft?1:0)-(k.d||k.arrowright?1:0);
+ if(tn)tgt=null;yaw+=tn*1.8*dt;if(f){tgt=null;X-=Math.sin(yaw)*f*6*dt;Z-=Math.cos(yaw)*f*6*dt}
+ if(tgt){const s=Math.min(1,3*dt);X+=(tgt.x-X)*s;Z+=(tgt.z-Z)*s;yaw+=(tgt.yaw-yaw)*s}
+ X=clamp(X,-12,12);Z=clamp(Z,-46,14);avatarStep(dt);PAYCB&&PAYCB();
+ spin.forEach(m=>m.rotation.y+=dt*.8);R.render(sc,cam)})(last);
+// ---------- product viewer (drag = rotate, wheel/buttons = zoom) ----------
+function viewer(el,p,hex){
+ const r=new THREE.WebGLRenderer({antialias:true,alpha:true});r.setPixelRatio(Math.min(devicePixelRatio,2));r.shadowMap.enabled=true;r.shadowMap.type=THREE.PCFSoftShadowMap;r.outputEncoding=THREE.sRGBEncoding;r.toneMapping=THREE.ACESFilmicToneMapping;el.prepend(r.domElement);
+ const s=new THREE.Scene(),c=new THREE.PerspectiveCamera(40,1,.1,50);
+ s.environment=makeEnv(r);s.add(new THREE.HemisphereLight(0xffffff,0x88aabb,.3));const d=new THREE.DirectionalLight(0xffffff,1.6);d.position.set(3,5,4);d.castShadow=true;s.add(d);
+ const g=mk(p.type,hex);s.add(g);g.scale.setScalar(1.3);
+ const fl=new THREE.Mesh(new THREE.CircleGeometry(4,48),new THREE.ShadowMaterial({opacity:.3}));fl.rotation.x=-Math.PI/2;fl.position.y=-.9;fl.receiveShadow=true;s.add(fl);
+ let th=.6,ph=1.3,rr=4.6,auto=true,go=true,dr=null;
+ const up=()=>{const w=el.clientWidth,h=el.clientHeight;r.setSize(w,h);c.aspect=w/h;c.updateProjectionMatrix()};up();
+ el.onpointerdown=e=>{if(e.target.tagName=='BUTTON')return;dr={x:e.clientX,y:e.clientY};auto=false;el.setPointerCapture(e.pointerId)};
+ el.onpointermove=e=>{if(!dr)return;th-=(e.clientX-dr.x)*.01;ph=clamp(ph-(e.clientY-dr.y)*.01,.3,1.6);dr={x:e.clientX,y:e.clientY}};
+ el.onpointerup=()=>dr=null;el.onwheel=e=>{e.preventDefault();rr=clamp(rr+e.deltaY*.005,2.4,8)};
+ (function l(){if(!go)return;requestAnimationFrame(l);if(auto)th+=.008;c.position.set(rr*Math.sin(ph)*Math.sin(th),rr*Math.cos(ph),rr*Math.sin(ph)*Math.cos(th));c.lookAt(0,0,0);r.render(s,c)})();
+ return{tint:h=>g.userData.main.color.set(h).convertSRGBToLinear(),zoom:v=>rr=clamp(rr+v,2.4,8),stop:()=>{go=false;r.dispose();r.domElement.remove()}}}
+// ---------- dialogs ----------
+let vw=null;const dlg=$('#dlg'),card=$('#card');
+function close(){if(vw){vw.stop();vw=null}dlg.hidden=true}
+dlg.onclick=e=>{if(e.target==dlg)close()};
+const stars=r=>'★'.repeat(Math.round(r))+'☆'.repeat(5-Math.round(r))+' '+r;
+function openProduct(p){
+ let col=p.colors[0],sz=p.sizes[0],q=1;dlg.hidden=false;
+ card.innerHTML=`<button class="x">✕</button><div class="prod"><div id="vw"><div class="vb"><button data-z="-.6">＋</button><button data-z=".6">－</button></div></div><div class="inf"><small>${p.cat}</small><h2>${p.name}</h2><div style="color:var(--ye)">${stars(p.rating)}</div><div class="pr">${money(p.price)}</div><p>${p.desc}</p>
+ <div class="lbl">COLOR: <span id="cn">${col}</span></div><div id="cl"></div><div class="lbl">SIZE</div><div id="sl"></div>
+ <div class="lbl">QUANTITY</div><div class="q"><button id="mi">−</button><b id="qv">1</b><button id="pl">+</button></div>
+ <p style="color:${p.stock>5?'#2e8b57':'#e0483e'}">${p.stock>0?'● In stock ('+p.stock+' left)':'Out of stock'}</p><button class="pri" id="add" style="width:100%;padding:12px">ADD TO CART</button></div></div>`;
+ vw=viewer($('#vw'),p,COL[col]);
+ $('#vw').querySelectorAll('[data-z]').forEach(b=>b.onclick=()=>vw.zoom(+b.dataset.z));
+ const draw=()=>{$('#cl').innerHTML=p.colors.map(c=>`<button class="chip ${c==col?'on':''}" data-c="${c}"><span class="dot" style="background:${COL[c]}"></span> ${c}</button>`).join('');
+  $('#sl').innerHTML=p.sizes.map(s=>`<button class="chip ${s==sz?'on':''}" data-s="${s}">${s}</button>`).join('');
+  $('#cl').querySelectorAll('button').forEach(b=>b.onclick=()=>{col=b.dataset.c;$('#cn').textContent=col;vw.tint(COL[col]);draw()});
+  $('#sl').querySelectorAll('button').forEach(b=>b.onclick=()=>{sz=b.dataset.s;draw()})};draw();
+ $('#mi').onclick=()=>{q=Math.max(1,q-1);$('#qv').textContent=q};$('#pl').onclick=()=>{q=Math.min(p.stock,q+1);$('#qv').textContent=q};
+ card.querySelector('.x').onclick=close;
+ $('#add').onclick=()=>{addCart(p,col,sz,q);close();toast('Added to cart. Walk to a billing counter to pay.')}}
+// ---------- cart (localStorage MVP) ----------
+let cart=[];try{cart=JSON.parse(localStorage.getItem('cart3d')||'[]')}catch(e){}
+const save=()=>{try{localStorage.setItem('cart3d',JSON.stringify(cart))}catch(e){}renderCart()};
+const total=()=>cart.reduce((s,i)=>s+i.price*i.qty,0);
+function addCart(p,color,size,qty){const it=cart.find(i=>i.productId==p.id&&i.color==color&&i.size==size);if(it)it.qty+=qty;else cart.push({productId:p.id,name:p.name,image:CATS.find(c=>c.k==p.cat).e,model:'models/'+p.type+'.glb',color,size,qty,price:p.price});save()}
+function renderCart(){BAG=cart.length>0;$('#cnt').textContent=cart.reduce((s,i)=>s+i.qty,0);
+ $('#cart').innerHTML=`<div class="row"><b style="font-size:18px">Shopping Cart</b><button id="cc">✕</button></div><div id="items">${cart.length?cart.map((i,n)=>`<div class="it"><img class="th" src="${THUMB[i.productId]||''}" alt=""><div class="m"><b>${i.name}</b><br><span class="dot" style="background:${COL[i.color]}"></span> ${i.color} · Size ${i.size}<br>${money(i.price)}<br><small>3D: ${i.model}</small></div><div><div class="q"><button data-d="${n}">−</button>${i.qty}<button data-u="${n}">+</button></div><button data-r="${n}" style="margin-top:6px;padding:2px 8px">Remove</button></div></div>`).join(''):'<p>Your cart is empty. Walk into a shop and click a product!</p>'}</div>
+ <div class="row" style="font-size:18px"><b>Total</b><b>${money(total())}</b></div><div style="display:flex;gap:8px"><button id="clr">Clear</button><button class="pri" id="co" style="flex:1" ${cart.length?'':'disabled'}>Checkout</button></div>`;
+ $('#cc').onclick=()=>$('#cart').classList.remove('open');$('#clr').onclick=()=>{cart=[];save()};
+ $('#cart').querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{const i=cart[b.dataset.d];if(--i.qty<1)cart.splice(b.dataset.d,1);save()});
+ $('#cart').querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>{cart[b.dataset.u].qty++;save()});
+ $('#cart').querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{cart.splice(b.dataset.r,1);save()});
+ $('#co').onclick=checkout}
+$('#cartBtn').onclick=()=>$('#cart').classList.toggle('open');
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),1800)}
+function checkout(){$('#cart').classList.remove('open');dlg.hidden=false;
+ card.innerHTML=`<button class="x">✕</button><h2>Checkout</h2><div class="prod"><div><div class="lbl">DELIVERY ADDRESS</div><input id="a1" placeholder="Full name"><input id="a2" placeholder="Phone"><input id="a3" placeholder="Street address"><input id="a4" placeholder="City"><input id="a5" placeholder="PIN code"><p id="er" style="color:#e0483e"></p></div>
+ <div><div class="lbl">ORDER SUMMARY</div>${cart.map(i=>`<div class="row"><span>${i.name} (${i.color}, ${i.size}) × ${i.qty}</span><span>${money(i.price*i.qty)}</span></div>`).join('')}<hr><div class="row"><b>Total</b><b>${money(total())}</b></div><small>Mock payment: no real charge.</small><br><button class="pri" id="po" style="width:100%;padding:12px;margin-top:10px">PLACE ORDER</button></div></div>`;
+ card.querySelector('.x').onclick=close;
+ $('#po').onclick=()=>{const v=[1,2,3,4,5].map(n=>$('#a'+n).value.trim());if(v.includes('')){$('#er').textContent='Please fill all address fields.';return}
+  const o={id:'ORD-'+Date.now().toString(36).toUpperCase(),items:cart,totalAmount:total(),address:v.join(', '),paymentStatus:'Paid (mock)',orderStatus:'Processing',createdAt:new Date().toISOString()};
+  try{const h=JSON.parse(localStorage.getItem('orders3d')||'[]');h.push(o);localStorage.setItem('orders3d',JSON.stringify(h))}catch(e){}
+  cart=[];save();card.innerHTML=`<button class="x">✕</button><div style="text-align:center;padding:30px"><div style="font-size:60px">🎉</div><h2>Order confirmed!</h2><p>Order <b>${o.id}</b> · ${money(o.totalAmount)}</p><p>Delivering to: ${o.address}</p><button class="pri" id="ok">Continue shopping</button></div>`;
+  card.querySelector('.x').onclick=$('#ok').onclick=close}}
+const chat=$('#chat');
+$('#aiBtn').onclick=()=>chat.hidden=!chat.hidden;$('#cx').onclick=()=>chat.hidden=true;
+function say(t,who){const d=document.createElement('div');d.className='msg '+who;d.textContent=t;$('#msgs').appendChild(d);$('#msgs').scrollTop=1e9;return d}
+function goShop(i){tgt={x:i<3?-6.3:6.3,z:SH[i].z,yaw:SH[i].yaw}}
+const KW={Shoes:['shoe','sneaker','footwear'],Clothing:['shirt','tee','hoodie','cloth'],Bags:['bag','backpack','tote'],Watches:['watch'],Accessories:['sunglass','glasses','cap','accessor'],Electronics:['headphone','speaker','electronic','earphone']};
+function ai(q){const s=q.toLowerCase(),cat=Object.keys(KW).find(c=>KW[c].some(w=>s.includes(w))),col=Object.keys(COL).find(c=>s.includes(c.toLowerCase())),m=s.match(/(?:under|below|less than|within|<)\s*₹?\s*([\d,]+)/)||s.match(/₹\s*([\d,]+)/),max=m?+m[1].replace(/,/g,''):null;
+ if(!cat&&!col&&!max&&!/cheap|best|all|show|recommend/.test(s))return{t:'I can find products for you. Try: "black shoes under 3000" or "show watches".'};
+ const r=P.filter(p=>(!cat||p.cat==cat)&&(!col||p.colors.includes(col))&&(!max||p.price<=max));if(/cheap/.test(s))r.sort((a,b)=>a.price-b.price);
+ return r.length?{t:`I found ${r.length} product${r.length>1?'s':''} in our store:`,r}:{t:'Sorry, nothing in our store matches that. Try another colour or budget.'}}
+function ask(q){if(!q.trim())return;say(q,'me');const a=ai(q),d=say(a.t,'bot');(a.r||[]).forEach(p=>{const w=document.createElement('div');w.className='res';w.innerHTML=`<span>${p.name}<br><b>${money(p.price)}</b></span><span><button>VIEW PRODUCT</button><button>Go to shop</button></span>`;const b=w.querySelectorAll('button');b[0].onclick=()=>openProduct(p);b[1].onclick=()=>{goShop(CATS.findIndex(c=>c.k==p.cat));chat.hidden=true};d.appendChild(w)})}
+$('#qs').onclick=()=>{const v=$('#qi').value;$('#qi').value='';ask(v)};$('#qi').onkeydown=e=>{if(e.key=='Enter')$('#qs').click()};
+$('#sug').innerHTML=['Black shoes under 3000','Show watches','Cheapest bag','Headphones'].map(t=>`<button>${t}</button>`).join('');$('#sug').querySelectorAll('button').forEach(b=>b.onclick=()=>ask(b.textContent));
+say("Hi! I'm your shopping assistant, floating beside you. Ask by category, colour or budget. I only show real items from this store.",'bot');
+PAYCB=()=>{const near=CTR.some(c=>Math.hypot(c.x-X,c.z-Z)<1.9),b=$('#pay');b.hidden=!near;if(near)b.textContent=cart.length?'Pay at counter · '+money(total()):'Counter: add items to cart first'};
+$('#pay').onclick=()=>{if(cart.length)checkout();else toast('Your cart is empty')};
+const THUMB={};
+function thumbs(){const r=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});r.setSize(360,360);r.outputEncoding=THREE.sRGBEncoding;r.toneMapping=THREE.ACESFilmicToneMapping;const s=new THREE.Scene(),c=new THREE.PerspectiveCamera(35,1,.1,50);s.environment=makeEnv(r);s.add(new THREE.HemisphereLight(0xffffff,0x445566,.4));const d=new THREE.DirectionalLight(0xffffff,1.4);d.position.set(3,5,4);s.add(d);
+ P.forEach(p=>{const g=mk(p.type,COL[p.colors[0]]);g.rotation.y=.6;s.add(g);c.position.set(2.8,1.4,4.6);c.lookAt(0,0,0);r.render(s,c);THUMB[p.id]=r.domElement.toDataURL('image/png');s.remove(g)});r.dispose()}
+try{thumbs()}catch(e){}
+const cf={q:'',cat:'All',sort:'pop'};
+function renderCat(){const l=P.filter(p=>(cf.cat=='All'||p.cat==cf.cat)&&p.name.toLowerCase().includes(cf.q.toLowerCase()));if(cf.sort=='lo')l.sort((a,b)=>a.price-b.price);if(cf.sort=='hi')l.sort((a,b)=>b.price-a.price);if(cf.sort=='rt')l.sort((a,b)=>b.rating-a.rating);
+ $('#chips').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.c==cf.cat));
+ $('#grid').innerHTML=l.map(p=>`<article class="pc"><div class="im"><img src="${THUMB[p.id]||''}" alt="${p.name}"></div><small>${p.cat}</small><h4>${p.name}</h4><div class="rt">★ ${p.rating}</div><div class="pp">${money(p.price)}</div><div class="cb"><button class="pri" data-v="${p.id}">View in 3D</button><button data-g="${p.id}">Visit shop</button></div></article>`).join('')||'<p>No products found.</p>'}
+function openCat(q){if(q!==undefined){cf.q=q;$('#cq').value=q}$('#hero').hidden=true;$('#catp').hidden=false;renderCat()}
+$('#chips').innerHTML=['All',...CATS.map(c=>c.k)].map(c=>`<button class="chip" data-c="${c}">${c}</button>`).join('');
+$('#chips').onclick=e=>{if(e.target.dataset.c){cf.cat=e.target.dataset.c;renderCat()}};
+$('#cq').oninput=e=>{cf.q=e.target.value;renderCat()};$('#cs').onchange=e=>{cf.sort=e.target.value;renderCat()};
+$('#grid').onclick=e=>{const v=e.target.dataset.v,g=e.target.dataset.g;if(v)openProduct(P.find(p=>p.id==v));if(g){goShop(CATS.findIndex(c=>c.k==P.find(p=>p.id==g).cat));$('#catp').hidden=true}};
+$('#catBtn').onclick=()=>openCat('');$('#cclose').onclick=()=>$('#catp').hidden=true;$('#sq').onkeydown=e=>{if(e.key=='Enter')openCat(e.target.value)};
+$('#enter').onclick=()=>$('#hero').hidden=true;$('#heroCat').onclick=()=>openCat('');
+renderCart();
+</script>
+</body></html>
