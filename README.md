@@ -1,4 +1,4 @@
-Yes. Your uploaded specification is essentially asking for a 3D e-commerce website + AI shopping assistant. The document recommends building the core 3D store first and adding the AI assistant after the cart flow works. �
+
 3D_Store_AI_Agent_Project_Spec.pdf
 I would build it as a MERN + Three.js/React Three Fiber + AI API project.
 1. Overall architecture
